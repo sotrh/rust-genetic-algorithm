@@ -1,0 +1,16 @@
+{
+  "name": "rust-genetic-algorithm",
+  "version": "1.0.0",
+  "description": "Monkey typewriter example",
+  "main": "index.js",
+  "author": "Ben Hansen <bhbenjaminhansen@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "rimraf dist/js && rollup --config"
+  },
+  "devDependencies": {
+    "@wasm-tool/rollup-plugin-rust": "^1.0.5",
+    "rimraf": "^3.0.2",
+    "rollup": "^2.35.1"
+  }
+}
