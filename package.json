@@ -5,6 +5,8 @@
   "main": "index.js",
   "author": "Ben Hansen <bhbenjaminhansen@gmail.com>",
   "license": "MIT",
+  "repository": "https://github.com/sotrh/rust-genetic-algorithm",
+  "homepage": "https://github.com/sotrh/rust-genetic-algorithm#readme",
   "scripts": {
     "build": "rimraf dist/js && rollup --config"
   },

@@ -71,7 +71,7 @@ class Individual:
 if __name__ == '__main__':
     import sys
 
-    target = "To be or not to be."
+    target = "To be or not to be. That is the question."
     num = 500
     mut_chance = 0.1
     num_args = len(sys.argv)
