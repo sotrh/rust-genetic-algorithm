@@ -11,6 +11,7 @@ crate-type = ["rlib", "cdylib"]
 rand = "0.7"
 wasm-bindgen = "0.2.69"
 console_error_panic_hook = "0.1.6"
+js-sys = "0.3.46"
 
 [dependencies.web-sys]
 version = "0.3.46"

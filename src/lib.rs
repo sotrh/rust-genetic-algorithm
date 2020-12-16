@@ -1,8 +1,17 @@
 use std::fmt::Formatter;
 use std::{cmp::{PartialOrd, Ordering}, fmt::Display};
 
+#[cfg(not(target_arch="wasm32"))]
 use rand::Rng;
+#[cfg(not(target_arch="wasm32"))]
 use rand::distributions::Uniform;
+
+#[cfg(target_arch="wasm32")]
+use std::time::Instant;
+#[cfg(target_arch="wasm32")]
+use wasm_bindgen::prelude::*;
+#[cfg(target_arch="wasm32")]
+use web_sys::console;
 
 pub struct Population<'a> {
     target: &'a str,
@@ -47,7 +56,8 @@ impl<'a> Population<'a> {
             let a = &self.agents[i];
             let b = &self.agents[i + 1];
             let mut child = a.breed(b);
-            if rand::random::<f32>() < self.mut_chance {
+
+            if rand() < self.mut_chance {
                 child.mutate();
             }
             self.agents[half + i] = child;
@@ -98,7 +108,7 @@ impl Agent {
     }
 
     pub fn mutate(&mut self) {
-        let index = rand::thread_rng().gen_range(0, self.genes.len());
+        let index = rand_int(self.genes.len());
         self.genes[index] = rand_char();
     }
     
@@ -126,15 +136,57 @@ impl Display for Agent {
     }
 }
 
-fn rand_char() -> char {
-    rand::thread_rng()
-        .sample(&Uniform::new_inclusive(32u8, 126)) as char
+fn rand() -> f32 {
+    #[cfg(target_arch="wasm32")] {
+        js_sys::Math::random() as f32
+    }
+    #[cfg(not(target_arch="wasm32"))] {
+        rand::random()
+    }
 }
 
-use wasm_bindgen::prelude::*;
-use web_sys::console;
+fn rand_int(max: usize) -> usize {
+    #[cfg(target_arch="wasm32")] {
+        (js_sys::Math::random() * max as f64).floor() as usize
+    }
+    #[cfg(not(target_arch="wasm32"))] {
+        rand::thread_rng().gen_range(0, max)
+    }
+}
+
+fn rand_char() -> char {
+    #[cfg(target_arch="wasm32")] {
+        let c = (js_sys::Math::random() * (126.0 - 32.0) + 32.0).floor() as u8;
+        c as char
+    }
+    #[cfg(not(target_arch="wasm32"))] {
+        rand::thread_rng()
+            .sample(&Uniform::new_inclusive(32u8, 126)) as char
+    }
+}
+
+#[cfg(target_arch="wasm32")]
 #[wasm_bindgen(start)]
 pub fn main_js() {
     console_error_panic_hook::set_once();
-    console::log_1(&JsValue::from("Hello, world!"));
+    
+    let target = "To be or not to be. That is the question.";
+    let num_agents = 100;
+    let mut_chance = 0.1;
+
+    console::log_1(&"Creating population".into());
+    let mut p = Population::random(target, num_agents, mut_chance);
+    
+    console::log_1(&"Starting simulation".into());
+
+    console::time_with_label("simulation");
+    while p.max_fitness() < 1.0 {
+        p.select();
+        console::log_1(&format!("{} {} {}", p.generation(), p.fittest().unwrap(), p.max_fitness()).into());
+        p.breed();
+    }
+    console::time_end_with_label("simulation");
+
+    console::log_1(&format!("Most Fit: {}", p.fittest().unwrap()).into());
+    console::log_1(&format!("Num Generations: {}", p.generation()).into());
 }
