@@ -36,6 +36,16 @@ fn main() {
 }
 ```
 
+## How to run
+
+```bash
+# For rust
+cargo run <OPTIONAL_TARGET_PHRASE>
+# For python
+python3 monkey.py <OPTIONAL_TARGET_PHRASE>
+# For web example
+yarn serve # npm run serve
+```
 
 ### Rust
 

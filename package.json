@@ -8,7 +8,8 @@
   "repository": "https://github.com/sotrh/rust-genetic-algorithm",
   "homepage": "https://github.com/sotrh/rust-genetic-algorithm#readme",
   "scripts": {
-    "build": "rimraf dist/js && rollup --config"
+    "build": "rimraf dist/js && rollup --config",
+    "serve": "yarn build && python -m http.server 8080 --directory dist"
   },
   "devDependencies": {
     "@wasm-tool/rollup-plugin-rust": "^1.0.0",
