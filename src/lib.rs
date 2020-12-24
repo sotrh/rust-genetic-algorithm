@@ -1,16 +1,19 @@
 use std::fmt::Formatter;
-use std::{cmp::{PartialOrd, Ordering}, fmt::Display};
+use std::{
+    cmp::{Ordering, PartialOrd},
+    fmt::Display,
+};
 
-#[cfg(not(target_arch="wasm32"))]
-use rand::Rng;
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(not(target_arch = "wasm32"))]
 use rand::distributions::Uniform;
-#[cfg(not(target_arch="wasm32"))]
+#[cfg(not(target_arch = "wasm32"))]
+use rand::Rng;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 
-#[cfg(target_arch="wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::{prelude::*, JsCast};
+#[cfg(target_arch = "wasm32")]
 use web_sys::console;
 
 pub struct Population<'a> {
@@ -89,29 +92,35 @@ pub struct Agent {
 
 impl Agent {
     pub fn random(num_genes: usize) -> Self {
-        let genes = (0..num_genes)
-            .map(|_| rand_char())
-            .collect();
-        Self { fitness: 0.0, genes }
+        let genes = (0..num_genes).map(|_| rand_char()).collect();
+        Self {
+            fitness: 0.0,
+            genes,
+        }
     }
 
     pub fn breed(&self, other: &Self) -> Self {
         let num_genes = self.genes.len();
         let genes = (0..num_genes)
-            .map(|i| if i < num_genes / 2 {
-                self.genes[i]
-            } else {
-                other.genes[i]
+            .map(|i| {
+                if i < num_genes / 2 {
+                    self.genes[i]
+                } else {
+                    other.genes[i]
+                }
             })
             .collect();
-        Self { genes, fitness: 0.0 }
+        Self {
+            genes,
+            fitness: 0.0,
+        }
     }
 
     pub fn mutate(&mut self) {
         let index = rand_int(self.genes.len());
         self.genes[index] = rand_char();
     }
-    
+
     pub fn calc_fitness(&mut self, target: &str) {
         assert_eq!(self.genes.len(), target.len());
         self.fitness = {
@@ -136,73 +145,133 @@ impl Display for Agent {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(inline_js = r#"
+export function performance_now() {
+    return performance.now();
+}
+"#)]
+extern "C" {
+    fn performance_now() -> f64;
+}
+
 fn rand() -> f32 {
-    #[cfg(target_arch="wasm32")] {
+    #[cfg(target_arch = "wasm32")]
+    {
         js_sys::Math::random() as f32
     }
-    #[cfg(not(target_arch="wasm32"))] {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
         rand::random()
     }
 }
 
 fn rand_int(max: usize) -> usize {
-    #[cfg(target_arch="wasm32")] {
+    #[cfg(target_arch = "wasm32")]
+    {
         (js_sys::Math::random() * max as f64).floor() as usize
     }
-    #[cfg(not(target_arch="wasm32"))] {
-        rand::thread_rng().gen_range(0, max)
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        rand::thread_rng().gen_range(0..max)
     }
 }
 
 fn rand_char() -> char {
-    #[cfg(target_arch="wasm32")] {
+    #[cfg(target_arch = "wasm32")]
+    {
         let c = (js_sys::Math::random() * (126.0 - 32.0) + 32.0).floor() as u8;
         c as char
     }
-    #[cfg(not(target_arch="wasm32"))] {
-        rand::thread_rng()
-            .sample(&Uniform::new_inclusive(32u8, 126)) as char
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        rand::thread_rng().sample(&Uniform::new_inclusive(32u8, 126)) as char
     }
 }
 
-#[cfg_attr(target_arch="wasm32", wasm_bindgen)]
-pub fn simulation(
-    target: &str, 
-    num_agents: usize, 
-    mut_chance: f32
-) {
-    #[cfg(target_arch="wasm32")]
+#[cfg(target_arch = "wasm32")]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+pub fn run_simulation(target: String, num_agents: usize, mut_chance: f32) {
+    wasm_bindgen_futures::spawn_local(simulation(target, num_agents, mut_chance));
+}
+
+pub async fn simulation(target: String, num_agents: usize, mut_chance: f32) {
+    #[cfg(target_arch = "wasm32")]
     console_error_panic_hook::set_once();
 
-    #[cfg(target_arch="wasm32")]
+    assert_ne!(target.len(), 0);
+    assert!(num_agents >= 4);
+    assert!(mut_chance > 0.0);
+
+    #[cfg(target_arch = "wasm32")]
     console::log_1(&"Creating population".into());
-    #[cfg(not(target_arch="wasm32"))]
+    #[cfg(not(target_arch = "wasm32"))]
     println!("Creating population");
-    let mut p = Population::random(target, num_agents, mut_chance);
-    
-    #[cfg(target_arch="wasm32")]
+    let mut p = Population::random(&target, num_agents, mut_chance);
+
+    #[cfg(target_arch = "wasm32")]
     console::log_1(&"Starting simulation".into());
-    
-    #[cfg(target_arch="wasm32")]
-    console::time_with_label("simulation");
-    #[cfg(not(target_arch="wasm32"))]
+
+    #[cfg(target_arch = "wasm32")]
+    let (output, results, mut text, start_time) = {
+        let window = web_sys::window().expect("Global window doesn't exist");
+        let document = window.document().expect("No document on window");
+        let results = document
+            .get_element_by_id("results")
+            .expect("Unable to find #results")
+            .dyn_into::<web_sys::HtmlElement>()
+            .unwrap();
+        let output = document
+            .get_element_by_id("output")
+            .expect("Unable to find #output")
+            .dyn_into::<web_sys::HtmlElement>()
+            .unwrap();
+        let text = vec!["Starting simulation:".to_owned()];
+        console::time_with_label("simulation");
+        (output, results, text, performance_now())
+    };
+    #[cfg(not(target_arch = "wasm32"))]
     let start_time = Instant::now();
+    let mut last_fitness = None;
+
     while p.max_fitness() < 1.0 {
         p.select();
-        #[cfg(target_arch="wasm32")]
-        console::log_1(&format!("{} {} {}", p.generation(), p.fittest().unwrap(), p.max_fitness()).into());
-        #[cfg(not(target_arch="wasm32"))]
-        println!("{} {} {}", p.generation(), p.fittest().unwrap(), p.max_fitness());
+        if last_fitness != Some(p.max_fitness()) {
+            #[cfg(target_arch = "wasm32")]
+            text.push(format!(
+                "{}\t{}\t{}",
+                p.generation(),
+                p.fittest().unwrap(),
+                p.max_fitness()
+            ));
+            #[cfg(not(target_arch = "wasm32"))]
+            println!(
+                "{}\t{}\t{}",
+                p.generation(),
+                p.fittest().unwrap(),
+                p.max_fitness()
+            );
+            last_fitness = Some(p.max_fitness());
+        }
         p.breed();
     }
-    #[cfg(target_arch="wasm32")] {
+
+    #[cfg(target_arch = "wasm32")]
+    {
         console::time_end_with_label("simulation");
-        console::log_1(&format!("Most Fit: {}", p.fittest().unwrap()).into());
-        console::log_1(&format!("Num Generations: {}", p.generation()).into());
+        let elapsed = (performance_now() - start_time);
+        text.push("Simulation Ended:".to_owned());
+        text.push(format!("Most Fit:\t{}", p.fittest().unwrap()));
+        text.push(format!("Generations:\t{}", p.generation()));
+        text.push(format!("Elapsed Time:\t{}ms", elapsed));
+        output.set_inner_text(&text.join("\n"));
+        results.set_scroll_top(results.scroll_height());
     }
-    #[cfg(not(target_arch="wasm32"))] {
-        println!("Elapsed Time: {:?}", Instant::now() - start_time);
-        println!("Most Fit: {}", p.fittest().unwrap());
-        println!("Num Generations: {}", p.generation());
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        println!("Simulation Ended");
+        println!("Most Fit:\t{}", p.fittest().unwrap());
+        println!("Generations:\t{}", p.generation());
+        println!("Elapsed Time:\t{:?}", Instant::now() - start_time);
     }
 }

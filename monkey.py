@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     target = "To be or not to be. That is the question."
     num = 500
-    mut_chance = 0.1
+    mut_chance = 0.5
     num_args = len(sys.argv)
     if num_args > 1:
         target = str(sys.argv[1])
@@ -85,12 +85,20 @@ if __name__ == '__main__':
     p = Population(target, num, mut_chance)
     generations = 0
     start_time = time()
-    while p.most_fit is None or p.most_fit.fitness(target) < 1.0:
+    last_fitness = None
+    fitness = 0.0
+    while p.most_fit is None or fitness < 1.0:
         p.selection()
-        print(p.most_fit)
+        most_fit = p.most_fit
+        fitness = most_fit.fitness(target)
+        if last_fitness is None or last_fitness != fitness:
+            print(f'{generations}\t{p.most_fit}\t{fitness}')
+            last_fitness = fitness
         p.reproduce()
         generations += 1
     end_time = time()
 
-    print(f"Total Generations: {generations}")
-    print(f"Time Taken: {end_time - start_time}")
+    print(f"Simulation ended:")
+    print(f"Most Fit:\t{p.most_fit}")
+    print(f"Generations:\t{generations}")
+    print(f"Elapsed Time:\t{end_time - start_time}")

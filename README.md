@@ -4,71 +4,57 @@
 
 Finding the phrase 'To be or not to be. That is the question.' Inspired by the example given by [Coding Train](https://www.youtube.com/watch?v=9zfeTw-uFCw). 
 
-Both algorithms start with a randomized array of characters as "genes". The list of individuals is sorted by most fit to least fit, then half of the list is considered "dead". The fit half of the least breeds to bring up the population. This is repeated until the algorithm arrives at the target string. I've listed the `main` function for the rust code below:
-
-```rust
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let target: &str = args.get(1)
-        .and_then(|arg| Some(arg as &str))
-        .unwrap_or("To be or not to be. That is the question.");
-    let num_agents = args.get(2)
-        .and_then(|arg| Some(arg.parse().unwrap()))
-        .unwrap_or(100);
-    let mut_chance = args.get(3)
-        .and_then(|arg| Some(arg.parse().unwrap()))
-        .unwrap_or(0.1);
-
-    let mut p = Population::random(target, num_agents, mut_chance);
-
-    let start_time = Instant::now();
-    while p.max_fitness() < 1.0 {
-        p.select();
-        println!("{} {} {}", p.generation(), p.fittest().unwrap(), p.max_fitness());
-        p.breed();
-    }
-    let elapsed = Instant::now() - start_time;
-
-    println!("Most Fit: {}", p.fittest().unwrap());
-    println!("Num Generations: {}", p.generation());
-    println!("Elapsed Time: {:?}", elapsed);
-}
-```
+Both algorithms start with a randomized array of characters as "genes". The list of individuals is sorted by most fit to least fit, then half of the list is considered "dead". The fit half of the least breeds to bring up the population. This is repeated until the algorithm arrives at the target string.
 
 ## How to run
 
 ```bash
 # For rust
-cargo run '<OPTIONAL_TARGET_PHRASE>'
+cargo run --release '<OPTIONAL_TARGET_PHRASE>'
 # For python
 python3 monkey.py '<OPTIONAL_TARGET_PHRASE>'
 # For web example
 yarn serve # npm run serve
 ```
 
-### Rust
+## Things I've learned
 
-```bash
-3638 To be or not to be. That is the qulstion. 0.9756098
-3639 To be or not to be. That is the qulstion. 0.9756098
-3640 To be or not to be. That is the qulstion. 0.9756098
-3641 To be or not to be. That is the qulstion. 0.9756098
-3642 To be or not to be. That is the qulstion. 0.9756098
-3643 To be or not to be. That is the question. 1
-Most Fit: To be or not to be. That is the question.
-Num Generations: 3644
-Elapsed Time: 3.12029417s
+### Supporting multiple architectures is a pain
+
+Wasm has pretty good support for most crates. I had a few surprising issues though. The first was that I couldn't figure out how to get the `rand` crate to run on wasm. Functions like `rand::thread_rng` aren't implemented for web assembly. There may have been a feature that I could have enabled to get it to work out of the box, but I didn't find any. This lead me to create some helper functions that would use `rand` on the host platform, and `js_sys` on wasm.
+
+```rust
+fn rand_char() -> char {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let c = (js_sys::Math::random() * (126.0 - 32.0) + 32.0).floor() as u8;
+        c as char
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        rand::thread_rng().sample(&Uniform::new_inclusive(32u8, 126)) as char
+    }
+}
 ```
 
-### Python
+I have a lot of `cfg(...)` statements throughout the code. They clutter up the code and make things harder to read. I probably should have used a crate like `cfg_if`, but I digress.
 
-```bash
-To be or not to be. ThCt is the question.
-To be or not to be. ThCt is the question.
-To be or not to be. ThCt is the question.
-To be or not to be. ThCt is the question.
-To be or not to be. That is the question.
-Total Generations: 966
-Time Taken: 3.8000526428222656
-```
+I feel like there must be some a way to use `rand` on wasm, but I just wanted to get my code working and not sift through all the available features on the crate. Speaking of features...
+
+### Docs.rs has a "Feature flags" button
+
+I don't know why it took me so long to find this. It's right at the top of the header next to "Builds".
+
+![./screenshot_features.png](./screenshot_features.png)
+
+I was about to complain about docs.rs not having a features section when I decided to double check.
+
+### Wasm code is blocking by default
+
+This makes sense in hindsight, but I discovered this when I tried to have my simulation update the UI. My page would freeze and the browser would ask me if I wanted to stop the code. Making my `simulation` function `async` stopped the page from freezing, though I had to make some changes to get the browser to stop complaining about my code slowing things down.
+
+In future I should create a web worker to run long standing code like this.
+
+### Certain OS features in std panic
+
+I was using `std::time::Instant::now()` for benchmarking purposes, and my code would panic when I called it on wasm. Apparently there are some parts of the OS that are unavailable to wasm. The system time is one of them. It's surprising that a core part of the standard library doesn't support wasm, but to be honest dealing with time is a major pain. You can check out [this issue](https://github.com/rust-lang/rust/issues/48564), if you want to know more.

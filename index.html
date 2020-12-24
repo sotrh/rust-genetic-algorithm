@@ -4,24 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monkey Typewriter | Genetic Algorithm</title>
+    <style>
+        html {
+            width: 100%;
+            height: 100%;
+        }
+        body {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-flow: column;
+            padding: 0;
+            margin: 0;
+        }
+        #simulation {
+            background-color: coral;
+            padding: 1rem;
+            display: flex;
+        }
+        #simulation input {
+            margin-right: .5rem;
+        }
+        #simulation input:first-child {
+            width: auto;
+            flex-grow: 1;
+        }
+        #results {
+            width: 100%;
+            flex-grow: 1;
+            padding: 1rem;
+            overflow: scroll;
+        }
+    </style>
 </head>
 <body>
     <div id="simulation">
-        <form>
-            <input type="text" name="target" id="target" value="To be or not to be. That is the question.">
-            <input type="number" name="num_agents" id="num_agents" value="100" min="4">
-            <input type="number" name="mut_chance" id="mut_chance" value="0.1" min="0.0" step="0.1">
-        </form>
+        <input type="text" name="target" id="target" value="To be or not to be. That is the question.">
+        <input type="number" name="num_agents" id="num_agents" value="100" min="4">
+        <input type="number" name="mut_chance" id="mut_chance" value="0.5" min="0.1" max="1.0" step="0.1">
         <button id="runSim">Run simulation</button>
     </div>
+    <div id="results">
+        <pre><code id="output"></code></pre>
+    </div>
     <script type="module">
-        import { default as wasm, simulation } from "./pkg/rust_genetic_algorithm.js";
+        import { default as wasm, run_simulation } from "./pkg/rust_genetic_algorithm.js";
         wasm().then((module) => {
             const target = document.querySelector("#target");
             const num_agents = document.querySelector("#num_agents");
             const mut_chance = document.querySelector("#mut_chance");
+            const output = document.querySelector("#output");
             document.querySelector("#runSim").addEventListener("click", () => {
-                simulation(target.value, num_agents.value, mut_chance.value);
+                run_simulation(target.value, num_agents.value, mut_chance.value)
             });
         })
     </script>
