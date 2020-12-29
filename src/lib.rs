@@ -259,7 +259,7 @@ pub async fn simulation(target: String, num_agents: usize, mut_chance: f32) {
     #[cfg(target_arch = "wasm32")]
     {
         console::time_end_with_label("simulation");
-        let elapsed = (performance_now() - start_time);
+        let elapsed = performance_now() - start_time;
         text.push("Simulation Ended:".to_owned());
         text.push(format!("Most Fit:\t{}", p.fittest().unwrap()));
         text.push(format!("Generations:\t{}", p.generation()));

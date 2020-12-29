@@ -19,7 +19,7 @@ yarn serve # npm run serve
 
 ## Things I've learned
 
-### Supporting multiple architectures is a pain
+### Supporting multiple architectures can be a pain
 
 Wasm has pretty good support for most crates. I had a few surprising issues though. The first was that I couldn't figure out how to get the `rand` crate to run on wasm. Functions like `rand::thread_rng` aren't implemented for web assembly. There may have been a feature that I could have enabled to get it to work out of the box, but I didn't find any. This lead me to create some helper functions that would use `rand` on the host platform, and `js_sys` on wasm.
 
@@ -55,6 +55,10 @@ This makes sense in hindsight, but I discovered this when I tried to have my sim
 
 In future I should create a web worker to run long standing code like this.
 
-### Certain OS features in std panic
+### Instant::now() panics
 
 I was using `std::time::Instant::now()` for benchmarking purposes, and my code would panic when I called it on wasm. Apparently there are some parts of the OS that are unavailable to wasm. The system time is one of them. It's surprising that a core part of the standard library doesn't support wasm, but to be honest dealing with time is a major pain. You can check out [this issue](https://github.com/rust-lang/rust/issues/48564), if you want to know more.
+
+### Compiling crates with --release
+
+I've never really used `cargo run --release`, but when I was comparing the speeds of the wasm build and the regular Rust code, and I was suprised that the wasm was running faster. With the debug build I was getting around 900ms when running the simulation (my code code use some optimizing). The wasm code was getting around 50-100ms per run. Running with `--release` gives me in the 20s and 30s.
