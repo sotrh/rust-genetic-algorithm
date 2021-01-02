@@ -12,7 +12,7 @@ language: rust
   install:
     - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     - npm ci
-  scripts:
+  script:
     - npm run build
   deploy:
     provider: pages
