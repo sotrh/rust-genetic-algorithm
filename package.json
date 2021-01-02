@@ -1,0 +1,14 @@
+{
+  "name": "rust-genetic-algorithm",
+  "version": "1.0.0",
+  "description": "Monkey typewriter example",
+  "main": "index.js",
+  "author": "Ben Hansen <bhbenjaminhansen@gmail.com>",
+  "license": "MIT",
+  "repository": "https://github.com/sotrh/rust-genetic-algorithm",
+  "homepage": "https://github.com/sotrh/rust-genetic-algorithm#readme",
+  "scripts": {
+    "build": "wasm-pack build --target web",
+    "serve": "wasm-pack build --target web && python -m http.server 8080"
+  }
+}

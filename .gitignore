@@ -1,0 +1,9 @@
+/target
+Cargo.lock
+
+node_modules
+yarn-error.log
+/dist/js
+
+.vscode
+error.txt
