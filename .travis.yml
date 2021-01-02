@@ -11,9 +11,9 @@ jobs:
   fast_finish: true
 install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-  - npm ci
+  - yarn install --frozen-lockfile
 script:
-  - npm run build
+  - yarn build
 deploy:
   provider: pages
   skip_cleanup: true
