@@ -1,23 +1,23 @@
 language: rust
-  node_js:
-    - lts/*
-  rust:
-    - stable
-    - beta
-    - nightly
-  jobs:
-    allow_failures:
-      - rust: nightly
-    fast_finish: true
-  install:
-    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-    - npm ci
-  script:
-    - npm run build
-  deploy:
-    provider: pages
-    skip_cleanup: true
-    github_token: $GITHUB_TOKEN
-    keep_history: true
-    on:
-      branch: master
+node_js:
+  - lts/*
+rust:
+  - stable
+  - beta
+  - nightly
+jobs:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+install:
+  - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+  - npm ci
+script:
+  - npm run build
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  keep_history: true
+  on:
+    branch: master
