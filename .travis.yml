@@ -3,11 +3,11 @@ node_js:
   - lts/*
 rust:
   - stable
-  - beta
-  - nightly
-jobs:
-  allow_failures:
-    - rust: nightly
+#   - beta
+#   - nightly
+# jobs:
+#   allow_failures:
+#     - rust: nightly
   fast_finish: true
 install:
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
